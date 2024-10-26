@@ -1,4 +1,7 @@
-public class Admin {
+package com.example.coffee2_app;
+
+import java.util.ArrayList;
+public class Admin extents User{
     // Attributes
     private UserList userList;             // Stores list of all users (Entrant, Organizer, Admin)
     private EventList eventList;           // Stores list of all events
