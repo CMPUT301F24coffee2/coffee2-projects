@@ -159,4 +159,7 @@ public class Entrant implements Serializable {
         return signedUpEvents;
     }
 
+    public String getId() {
+        return userId;
+    }
 }
