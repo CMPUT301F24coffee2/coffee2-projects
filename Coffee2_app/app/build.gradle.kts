@@ -39,6 +39,7 @@ dependencies {
     //check later for the implementation of firebase
     implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
     implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-storage")
     implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation(libs.appcompat)
     implementation(libs.material)
@@ -47,7 +48,10 @@ dependencies {
     implementation(libs.lifecycle.viewmodel.ktx)
     implementation(libs.navigation.fragment)
     implementation(libs.navigation.ui)
+//    implementation(libs.firebase.storage)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    implementation("com.github.dhaval2404:imagepicker:2.1") // for image
+    implementation("com.github.bumptech.glide:glide:4.16.0")
 }
