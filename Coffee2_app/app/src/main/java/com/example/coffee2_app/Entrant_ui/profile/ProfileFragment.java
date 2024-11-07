@@ -27,7 +27,13 @@ import com.example.coffee2_app.EntrantHomeActivity;
 import com.example.coffee2_app.R;
 import com.example.coffee2_app.databinding.FragmentEntrantProfileBinding;
 import com.github.dhaval2404.imagepicker.ImagePicker;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.auth.FirebaseAuth;
+
+import java.util.Calendar;
 
 import kotlin.Unit;
 import kotlin.jvm.functions.Function1;
@@ -49,6 +55,19 @@ public class ProfileFragment extends Fragment {
         Glide.with(context).load(imageUri).apply(RequestOptions.circleCropTransform()).into(imageView);
     }
 
+    public static String currentUserId(){
+        return FirebaseAuth.getInstance().getUid();
+    }
+
+    public static StorageReference getCurrentProfilePicStorageRef(){
+        return FirebaseStorage.getInstance().getReference().child("profile_pic")
+                .child(currentUserId());
+    }
+
+    public static DocumentReference currentUserDetails(){
+        return FirebaseFirestore.getInstance().collection("users").document(currentUserId());
+    }
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
@@ -61,8 +80,7 @@ public class ProfileFragment extends Fragment {
                             setProfilePic(getContext(), selectedImageUri, profilePic);
                         }
                     }
-                }
-                );
+                });
     }
 
 
@@ -178,6 +196,69 @@ public class ProfileFragment extends Fragment {
         dialog.show();
     }
 
+    void updateToFirestore(){
+        if (entrant != null) {
+            currentUserDetails().set(entrant)
+                    .addOnCompleteListener(task -> {
+                        if(task.isSuccessful()){
+                            Toast.makeText(getContext(), "Updated successfully", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(getContext(), "Update failed", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+        } else {
+            Toast.makeText(getContext(), "Entrant data is missing", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // Inside ProfileFragment.java
+
+    // Update the existing Entrant instance in displayEntrantDetails()
+
+// Implement getUserData() and setInProgress()
+
+    void getUserData() {
+//        setInProgress(true);
+
+        // Load profile picture from Firebase Storage
+        getCurrentProfilePicStorageRef().getDownloadUrl()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Uri uri = task.getResult();
+                        setProfilePic(getContext(), uri, binding.profilePicture); // updated to use binding.profilePicture
+                    } else {
+                        Toast.makeText(getContext(), "Failed to load profile picture.", Toast.LENGTH_SHORT).show();
+                    }
+                });
+
+        // Load user data from Firestore
+        currentUserDetails().get().addOnCompleteListener(task -> {
+//            setInProgress(false);
+            if (task.isSuccessful()) {
+                entrant = task.getResult().toObject(Entrant.class); // Retrieve Entrant data
+                if (entrant != null) {
+                    binding.entrantName.setText(entrant.getName()); // Use Entrant's data to populate fields
+                    binding.entrantPhone.setText(entrant.getPhone());
+                    binding.entrantEmail.setText(entrant.getEmail());
+                }
+            } else {
+                Toast.makeText(getContext(), "Failed to load user data.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+//    void setInProgress(boolean inProgress) {
+//        if (inProgress) {
+//            binding.progressBar.setVisibility(View.VISIBLE); // show progress bar
+//            binding.updateProfileBtn.setVisibility(View.GONE); // hide update button while loading
+//        } else {
+//            binding.progressBar.setVisibility(View.GONE); // hide progress bar
+//            binding.updateProfileBtn.setVisibility(View.VISIBLE); // show update button
+//        }
+//    }
+
+
+
     private void saveProfileData() {
         String name = binding.entrantName.getText().toString().trim();
         String email = binding.entrantEmail.getText().toString().trim();
@@ -188,11 +269,20 @@ public class ProfileFragment extends Fragment {
         entrant.setEmail(email);
         entrant.setPhone(phone);
 
-        if (entrant.getId() != null) {
-            db.collection("entrants").document(entrant.getId())
-                    .set(entrant) // assuming entrant is a serializable object
-                    .addOnSuccessListener(aVoid -> Toast.makeText(getContext(), "Profile updated.", Toast.LENGTH_SHORT).show())
-                    .addOnFailureListener(e -> Toast.makeText(getContext(), "Error saving profile.", Toast.LENGTH_SHORT).show());
+//        if (entrant.getId() != null) {
+//            db.collection("entrants").document(entrant.getId())
+//                    .set(entrant) // assuming entrant is a serializable object
+//                    .addOnSuccessListener(aVoid -> Toast.makeText(getContext(), "Profile updated.", Toast.LENGTH_SHORT).show())
+//                    .addOnFailureListener(e -> Toast.makeText(getContext(), "Error saving profile.", Toast.LENGTH_SHORT).show());
+//        }
+
+        if(selectedImageUri != null) {
+            getCurrentProfilePicStorageRef().putFile(selectedImageUri)
+                    .addOnCompleteListener(task -> {
+                        updateToFirestore();
+                    });
+        }else{
+            updateToFirestore();
         }
     }
 
